@@ -25,14 +25,21 @@ exports.getTopPosts = async (req, res) => {
   })
   
   // Sort post starting from having the most comments
-  const sortedPosts = Object.fromEntries(
+  const sortedPostsByPostId = Object.fromEntries(
     Object.entries(numberOfCommentsByPostId).sort(([, a], [, b]) => b-a)
   )
   
-  const topPosts = Object.keys(sortedPosts).map(postId => {
+  const topPosts = Object.keys(sortedPostsByPostId).map(postId => {
     const matchNumberOfComments = numberOfCommentsByPostId[postId]
     const matchPost = postByPostId[postId]
 
+    /**
+     * Post Object has following fields
+     * id,
+     * title,
+     * body
+     * userId
+     */
     const {
       id,
       title,
@@ -52,57 +59,33 @@ exports.getTopPosts = async (req, res) => {
 }
 
 exports.getFilteredComments = async (req, res) => {
-  
+
   try {
-    sanityCheck(req.body)
-    const {
-      filterType,
-      filterString
-    } = req.body
+    const queryParams = req.query
 
     const comments = await getAllComments()
-    const filteredResults = []
+    let filteredResults = []
 
-    switch (filterType) {
-      case 1:
-        if (typeof filterString !== 'number') throw `filterString must be a number for filterType 1!`
+    const search = (key, value) => value.toString().toLowerCase().includes(queryParams[key].toString().toLowerCase())
 
-        comments.forEach(comment => {
-          if (comment.postId === filterString) {
-            filteredResults.push(comment)
-          }
-        })
-        break;
-      case 2:
-        if (typeof filterString !== 'string') throw `filterString must be a string for filterType 2!`
+    const searchByPostId = array => array.filter(a => a.postId === parseInt(queryParams.postId))
+    const filtration = (array, key) => array.filter(a => search(key, a[key])) 
 
-        comments.forEach(comment => {
-          if (comment.name.toLowerCase().includes(filterString.toLowerCase())) {
-            filteredResults.push(comment)
-          }
-        })
-        break;
-      case 3:
-        if (typeof filterString !== 'string') throw `filterString must be a string for filterType 3!`
-
-        comments.forEach(comment => {
-          if (comment.email.toLowerCase().includes(filterString.toLowerCase())) {
-            filteredResults.push(comment)
-          }
-        })
-        break;
-      case 4:
-        if (typeof filterString !== 'string') throw `filterString must be a string for filterType 4!`
-
-        comments.forEach(comment => {
-          if (comment.body.toLowerCase().includes(filterString.toLowerCase())) {
-            filteredResults.push(comment)
-          }
-        })
-        break;
-      default:
-        return
-    }
+    Object.keys(queryParams).forEach(param => {
+      if (param === 'postId') {
+        if (filteredResults.length) {
+          filteredResults = searchByPostId(filteredResults)
+        } else {
+          filteredResults = searchByPostId(comments)
+        }
+      } else {
+        if (filteredResults.length) {
+          filteredResults = filtration(filteredResults, param)
+        } else {
+          filteredResults = filtration(comments, param)
+        }
+      }
+    })
 
     res.write(JSON.stringify({
       comments: filteredResults
@@ -114,29 +97,5 @@ exports.getFilteredComments = async (req, res) => {
       message: err
     }, null, 2))
     res.end()
-    console.log(`EndPoint: ${req.url}. Error ${err}`)
-  }
-}
-
-const sanityCheck = obj => {
-  const requiredFields = [
-    'filterType',
-    'filterString'
-  ]
-
-  const requiredType = {
-    filterType: 'number'
-  }
-  
-  try {
-    requiredFields.forEach(rf => {
-      if (!obj.hasOwnProperty(rf)) throw `Missing required field ${rf}.`
-    })
-
-    Object.keys(requiredType).forEach(rt => {
-      if (typeof obj[rt] !== requiredType[rt]) throw `Invalid data type. Expected ${rt} type: ${requiredType[rt]}. Passed ${rt} type: ${typeof obj[rt]}.`
-    })
-  } catch (err) {
-    throw err
   }
 }

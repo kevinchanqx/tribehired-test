@@ -17,20 +17,15 @@ const server1 = async port => {
    * Endpoint: /posts/top
    */
   app.get('/posts/top', async (req, res) => {
+    console.log(process.pid)
     await getTopPosts(req, res)
   })
 
   /**
    * Second API - A search API that allows a user to filter the comments based on all the available fields.
    * Endpoint: /comments/search
-   * filterType must be presented in the request body
-   * It has the following values
-   * 1 : filter postId,
-   * 2 : filter name,
-   * 3 : filter email,
-   * 4 : filter body
    */
-  app.post('/comments/search', async (req, res) => {
+  app.get('/comments/search/', async (req, res) => {
     await getFilteredComments(req, res)
   })
 
