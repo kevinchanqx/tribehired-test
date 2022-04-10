@@ -13,7 +13,7 @@ exports.getTopPosts = async (req, res) => {
   /** Normalize posts by postId */
   const postByPostId = {}
   posts.forEach(post => {
-    if (!postByPostId.hasOwnProperty(`post#${post.id}`)) postByPostId[`post#${post.id}`] = post
+    postByPostId[`post#${post.id}`] = post
   })
 
   const numberOfCommentsByPostId = {}
@@ -61,6 +61,9 @@ exports.getTopPosts = async (req, res) => {
 exports.getFilteredComments = async (req, res) => {
 
   try {
+    /**
+     * EXAMPLE: /comments/search/?name=abc&postId=2
+     */
     const queryParams = req.query
 
     const comments = await getAllComments()
